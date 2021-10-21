@@ -13,10 +13,10 @@ class Model:
   def __init__(self,config):
     self.max_board_size = 19
     self.num_input_features = 17
-    self.input_shape = [19*19,self.num_input_features]
-    self.post_input_shape = [19,19,self.num_input_features]
-    self.policy_target_shape_nopass = [19*19]
-    self.policy_target_shape = [19*19+1] #+1 for pass move
+    self.input_shape = [7*7,self.num_input_features]
+    self.post_input_shape = [7,7,self.num_input_features]
+    self.policy_target_shape_nopass = [7*7]
+    self.policy_target_shape = [7*7+1] #+1 for pass move
     self.value_target_shape = []
     self.target_weights_shape = []
     self.rank_shape=[1+9+(17+9)+(19+9)]
