@@ -1,5 +1,5 @@
 : GTP Engine starting...
-: KataGo v1.9.1
+: KataGo v1.10.0
 : Using TrompTaylor rules initially, unless GTP/GUI overrides this
 : Using 1 CPU thread(s) for search
 : Added 48 shapes to penalize repeats for bot 0 from tests/data/cornermoves.sgf
@@ -35,6 +35,7 @@
 : Config override: rootPolicyTemperature = 1.5
 : Config override: rootSymmetryPruning = false
 : Config override: searchRandSeed = forTesting
+: Config override: trtUseFP16 = false
 : Model name: g170-b6c96-s175395328-d26788732
 : GTP ready, beginning main protocol loop
 : Controller: genmove_debug b

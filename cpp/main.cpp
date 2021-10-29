@@ -117,6 +117,8 @@ static int handleSubcommand(const string& subcommand, const vector<string>& args
     return MainCmds::runnnbatchingtest(subArgs);
   else if(subcommand == "runtinynntests")
     return MainCmds::runtinynntests(subArgs);
+  else if(subcommand == "runnnevalcanarytests")
+    return MainCmds::runnnevalcanarytests(subArgs);
   else if(subcommand == "samplesgfs")
     return MainCmds::samplesgfs(subArgs);
   else if(subcommand == "dataminesgfs")
@@ -188,11 +190,11 @@ int main(int argc, const char* const* argv) {
 
 
 string Version::getKataGoVersion() {
-  return string("1.9.1");
+  return string("1.10.0");
 }
 
 string Version::getKataGoVersionForHelp() {
-  return string("KataGo v1.9.1");
+  return string("KataGo v1.10.0");
 }
 
 string Version::getKataGoVersionFullInfo() {
@@ -207,6 +209,8 @@ string Version::getKataGoVersionFullInfo() {
 #define STRINGIFY2(x) STRINGIFY(x)
   out << "Compiled with CUDA version " << STRINGIFY2(CUDA_TARGET_VERSION) << endl;
 #endif
+#elif defined(USE_TENSORRT_BACKEND)
+  out << "Using TensorRT backend" << endl;
 #elif defined(USE_OPENCL_BACKEND)
   out << "Using OpenCL backend" << endl;
 #elif defined(USE_EIGEN_BACKEND)
@@ -230,4 +234,21 @@ string Version::getKataGoVersionFullInfo() {
 
 string Version::getGitRevision() {
   return string(GIT_REVISION);
+}
+
+string Version::getGitRevisionWithBackend() {
+  string s = string(GIT_REVISION);
+
+#if defined(USE_CUDA_BACKEND)
+  s += "-cuda";
+#elif defined(USE_TENSORRT_BACKEND)
+  s += "-trt";
+#elif defined(USE_OPENCL_BACKEND)
+  s += "-opencl";
+#elif defined(USE_EIGEN_BACKEND)
+  s += "-eigen";
+#else
+  s += "-dummy";
+#endif
+  return s;
 }

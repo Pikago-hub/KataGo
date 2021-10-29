@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.18.2)
 project(katago)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -6,11 +6,6 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(external)
 include_directories(external/tclap-1.2.2/include)
 include_directories(SYSTEM external/filesystem-1.5.8/include) #SYSTEM suppresses a few warnings
-
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18.0")
-  # Suppress a warning message for setting cuda flags that still works fine for now
-  cmake_policy(SET CMP0104 OLD)
-endif()
 
 #--------------------------- PLATFORM SPECIFIC -------------------------------------------------------------------------
 
@@ -33,7 +28,7 @@ endif()
 set(BUILD_DISTRIBUTED 0 CACHE BOOL "Build with http support for contributing to distributed training")
 set(USE_BACKEND CACHE STRING "Neural net backend")
 string(TOUPPER "${USE_BACKEND}" USE_BACKEND)
-set_property(CACHE USE_BACKEND PROPERTY STRINGS "" CUDA OPENCL EIGEN)
+set_property(CACHE USE_BACKEND PROPERTY STRINGS "" CUDA TENSORRT OPENCL EIGEN)
 
 set(USE_TCMALLOC 0 CACHE BOOL "Use TCMalloc")
 set(NO_GIT_REVISION 0 CACHE BOOL "Disable embedding the git revision into the compiled exe")
@@ -46,111 +41,26 @@ message(STATUS "Building 'katago' executable for GTP engine and other tools.")
 if(USE_BACKEND STREQUAL "CUDA")
   message(STATUS "-DUSE_BACKEND=CUDA, using CUDA backend.")
 
-
-  # Ensure dynamic cuda linking (Versions prior to 3.17)
-  if (${CMAKE_VERSION} VERSION_LESS "3.17")
-    set(CMAKE_CUDA_FLAGS "" CACHE STRING "")
-    if(CMAKE_CUDA_FLAGS)
-      list(REMOVE_ITEM CMAKE_CUDA_FLAGS "-cudart static")
-    endif()
-    string(APPEND CMAKE_CUDA_FLAGS "-cudart shared")
-  endif()
-
   enable_language(CUDA)
 
-  if(MSVC)
-    # Ensure dynamic cuda linking
-    if(CMAKE_CUDA_HOST_IMPLICIT_LINK_LIBRARIES)
-      list(REMOVE_ITEM CMAKE_CUDA_HOST_IMPLICIT_LINK_LIBRARIES "cudart_static")
-      list(REMOVE_ITEM CMAKE_CUDA_HOST_IMPLICIT_LINK_LIBRARIES "cudadevrt")
-      list(APPEND CMAKE_CUDA_HOST_IMPLICIT_LINK_LIBRARIES "cudart")
-    endif()
-    if(CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES)
-      list(REMOVE_ITEM CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES "cudart_static")
-      list(REMOVE_ITEM CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES "cudadevrt")
-      list(APPEND CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES "cudart")
-    endif()
-  endif()
-
   set(CUDA_STANDARD 11)
-
-  # Ensure dynamic cuda linking (Versions from 3.17)
-  if (${CMAKE_VERSION} VERSION_GREATER "3.16")
-    set(CMAKE_CUDA_RUNTIME_LIBRARY SHARED)
-  endif()
-
   set(NEURALNET_BACKEND_SOURCES neuralnet/cudabackend.cpp neuralnet/cudahelpers.cu)
 
-  if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
-    set(CMAKE_CUDA_FLAGS
-      " \
-      -gencode arch=compute_35,code=sm_35       \
-      -gencode arch=compute_35,code=compute_35  \
-      -gencode arch=compute_37,code=sm_37       \
-      -gencode arch=compute_37,code=compute_37  \
-      -gencode arch=compute_50,code=sm_50       \
-      -gencode arch=compute_50,code=compute_50  \
-      -gencode arch=compute_53,code=sm_53       \
-      -gencode arch=compute_53,code=compute_53  \
-      -gencode arch=compute_60,code=sm_60       \
-      -gencode arch=compute_60,code=compute_60  \
-      -gencode arch=compute_61,code=sm_61       \
-      -gencode arch=compute_61,code=compute_61  \
-      -gencode arch=compute_62,code=sm_62       \
-      -gencode arch=compute_62,code=compute_62  \
-      -gencode arch=compute_70,code=sm_70       \
-      -gencode arch=compute_70,code=compute_70  \
-      -gencode arch=compute_72,code=sm_72       \
-      -gencode arch=compute_72,code=compute_72  \
-      -gencode arch=compute_75,code=sm_75       \
-      -gencode arch=compute_75,code=compute_75  \
-      -gencode arch=compute_80,code=sm_80       \
-      -gencode arch=compute_80,code=compute_80  \
-      -Wno-deprecated-gpu-targets \
-      "
-      )
+  if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+    set(CMAKE_CUDA_ARCHITECTURES 35 37 50 53 60 61 62 70 72 75 80)
+    set(CMAKE_CUDA_FLAGS "-Wno-deprecated-gpu-targets")
   elseif (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 10.2)
-    set(CMAKE_CUDA_FLAGS
-      " \
-      -gencode arch=compute_30,code=sm_30       \
-      -gencode arch=compute_30,code=compute_30  \
-      -gencode arch=compute_35,code=sm_35       \
-      -gencode arch=compute_35,code=compute_35  \
-      -gencode arch=compute_37,code=sm_37       \
-      -gencode arch=compute_37,code=compute_37  \
-      -gencode arch=compute_50,code=sm_50       \
-      -gencode arch=compute_50,code=compute_50  \
-      -gencode arch=compute_53,code=sm_53       \
-      -gencode arch=compute_53,code=compute_53  \
-      -gencode arch=compute_60,code=sm_60       \
-      -gencode arch=compute_60,code=compute_60  \
-      -gencode arch=compute_61,code=sm_61       \
-      -gencode arch=compute_61,code=compute_61  \
-      -gencode arch=compute_62,code=sm_62       \
-      -gencode arch=compute_62,code=compute_62  \
-      -gencode arch=compute_70,code=sm_70       \
-      -gencode arch=compute_70,code=compute_70  \
-      -gencode arch=compute_72,code=sm_72       \
-      -gencode arch=compute_72,code=compute_72  \
-      -gencode arch=compute_75,code=sm_75       \
-      -gencode arch=compute_75,code=compute_75  \
-      -Wno-deprecated-gpu-targets \
-      "
-      )
+    set(CMAKE_CUDA_ARCHITECTURES 30 35 37 50 53 60 61 62 70 72 75)
+    set(CMAKE_CUDA_FLAGS "-Wno-deprecated-gpu-targets")
   else()
-      message(WARNING "CUDA 10.2 or greater is recommended, but attempting to build anyways")
-      set(CMAKE_CUDA_FLAGS
-        " \
-        -gencode arch=compute_30,code=sm_30 \
-        -gencode arch=compute_30,code=compute_30 \
-        -gencode arch=compute_37,code=sm_37 \
-        -gencode arch=compute_53,code=sm_53 \
-        -gencode arch=compute_53,code=compute_53 \
-        -gencode arch=compute_70,code=sm_70 \
-        -gencode arch=compute_70,code=compute_70 \
-        "
-        )
+    message(WARNING "CUDA 10.2 or greater is recommended, but attempting to build anyways")
+    set(CMAKE_CUDA_ARCHITECTURES 30 37 53 70)
   endif()
+elseif(USE_BACKEND STREQUAL "TENSORRT")
+  message(STATUS "-DUSE_BACKEND=TENSORRT, using TensorRT backend.")
+  set(NEURALNET_BACKEND_SOURCES
+    neuralnet/trtbackend.cpp
+    )
 elseif(USE_BACKEND STREQUAL "OPENCL")
   message(STATUS "-DUSE_BACKEND=OPENCL, using OpenCL backend.")
   set(NEURALNET_BACKEND_SOURCES
@@ -168,7 +78,7 @@ elseif(USE_BACKEND STREQUAL "EIGEN")
     neuralnet/eigenbackend.cpp
     )
 elseif(USE_BACKEND STREQUAL "")
-  message(WARNING "${ColorBoldRed}WARNING: Using dummy neural net backend, intended for non-neural-net testing only, will fail on any code path requiring a neural net. To use neural net, specify -DUSE_BACKEND=CUDA or -DUSE_BACKEND=OPENCL or -DUSE_BACKEND=EIGEN to compile with the respective backend.${ColorReset}")
+  message(WARNING "${ColorBoldRed}WARNING: Using dummy neural net backend, intended for non-neural-net testing only, will fail on any code path requiring a neural net. To use neural net, specify -DUSE_BACKEND=CUDA or -DUSE_BACKEND=TENSORRT or -DUSE_BACKEND=OPENCL or -DUSE_BACKEND=EIGEN to compile with the respective backend.${ColorReset}")
   set(NEURALNET_BACKEND_SOURCES neuralnet/dummybackend.cpp)
 else()
   message(FATAL_ERROR "Unrecognized backend: " ${USE_BACKEND})
@@ -289,6 +199,7 @@ add_executable(katago
   tests/testboardarea.cpp
   tests/testboardbasic.cpp
   tests/testcommon.cpp
+  tests/testnnevalcanary.cpp
   tests/testrules.cpp
   tests/testscore.cpp
   tests/testsgf.cpp
@@ -323,14 +234,37 @@ add_executable(katago
 if(USE_BACKEND STREQUAL "CUDA")
   target_compile_definitions(katago PRIVATE USE_CUDA_BACKEND)
   target_compile_definitions(katago PRIVATE CUDA_TARGET_VERSION=${CMAKE_CUDA_COMPILER_VERSION})
-  find_package(CUDA REQUIRED)
-  find_path(CUDNN_INCLUDE_DIR cudnn.h HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} PATH_SUFFIXES cuda/include include)
+  find_package(CUDAToolkit REQUIRED)
+  find_path(CUDNN_INCLUDE_DIR cudnn.h HINTS ${CUDNN_ROOT_DIR} ${CUDAToolkit_INCLUDE_DIRS} PATH_SUFFIXES include)
   if((NOT CUDNN_INCLUDE_DIR))
     message(FATAL_ERROR "${ColorBoldRed} cudnn.h was NOT found, specify CUDNN_INCLUDE_DIR to indicate where it is. ${ColorReset}")
   endif()
-  find_library(CUDNN_LIBRARY libcudnn.so PATHS /usr/local/cuda/lib64 /opt/cuda/lib64)
-  include_directories(SYSTEM ${CUDA_INCLUDE_DIRS} ${CUDNN_INCLUDE_DIR}) #SYSTEM is for suppressing some compiler warnings in thrust libraries
-  target_link_libraries(katago ${CUDNN_LIBRARY} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_LIBRARIES})
+  find_library(CUDNN_LIBRARY cudnn HINTS ${CUDNN_ROOT_DIR} ${CUDAToolkit_LIBRARY_DIR} PATH_SUFFIXES lib64)
+  include_directories(SYSTEM ${CUDAToolkit_INCLUDE_DIRS} ${CUDNN_INCLUDE_DIR}) #SYSTEM is for suppressing some compiler warnings in thrust libraries
+  target_link_libraries(katago CUDA::cublas ${CUDNN_LIBRARY})
+elseif(USE_BACKEND STREQUAL "TENSORRT")
+  target_compile_definitions(katago PRIVATE USE_TENSORRT_BACKEND)
+  find_package(CUDAToolkit REQUIRED)
+  find_path(TENSORRT_INCLUDE_DIR NvInfer.h HINTS ${TENSORRT_ROOT_DIR} ${CUDAToolkit_INCLUDE_DIRS} PATH_SUFFIXES include)
+  if((NOT TENSORRT_INCLUDE_DIR))
+    message(FATAL_ERROR "${ColorBoldRed} NvInfer.h was NOT found, specify TENSORRT_INCLUDE_DIR to indicate where it is. ${ColorReset}")
+  endif()
+  find_library(TENSORRT_LIBRARY nvinfer HINTS ${TENSORRT_ROOT_DIR} ${CUDAToolkit_LIBRARY_DIR} PATH_SUFFIXES lib64)
+  file(READ "${TENSORRT_INCLUDE_DIR}/NvInferVersion.h" tensorrt_version_header)
+  string(REGEX MATCH "#define NV_TENSORRT_MAJOR ([0-9]+)" tensorrt_version_macro ${tensorrt_version_header})
+  set(TENSORRT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  string(REGEX MATCH "#define NV_TENSORRT_MINOR ([0-9]+)" tensorrt_version_macro ${tensorrt_version_header})
+  set(TENSORRT_VERSION_MINOR ${CMAKE_MATCH_1})
+  string(REGEX MATCH "#define NV_TENSORRT_PATCH ([0-9]+)" tensorrt_version_macro ${tensorrt_version_header})
+  set(TENSORRT_VERSION_PATCH ${CMAKE_MATCH_1})
+  set(TENSORRT_VERSION "${TENSORRT_VERSION_MAJOR}.${TENSORRT_VERSION_MINOR}.${TENSORRT_VERSION_PATCH}")
+  # Version 8 is required for serializing the builder timing cache.
+  # Version 8.2 is required for eliminating the global logger for Builder and Runtime.
+  if(TENSORRT_VERSION VERSION_LESS 8.2)
+    message(FATAL_ERROR "TensorRT 8.2 or greater is required but ${TENSORRT_VERSION} was found.")
+  endif()
+  include_directories(SYSTEM ${CUDAToolkit_INCLUDE_DIRS} ${TENSORRT_INCLUDE_DIR}) #SYSTEM is for suppressing some compiler warnings in thrust libraries
+  target_link_libraries(katago CUDA::cudart_static ${TENSORRT_LIBRARY})
 elseif(USE_BACKEND STREQUAL "OPENCL")
   target_compile_definitions(katago PRIVATE USE_OPENCL_BACKEND)
   find_package(OpenCL REQUIRED)
@@ -444,13 +378,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang
     target_compile_definitions(katago PRIVATE USE_AVX2)
   endif()
 
-  # On g++ it seems like we need to explicitly link threads as well.
-  # It seems sometimes this is implied by other options automatically like when we enable CUDA, but we get link errors
-  # if we don't explicitly require threads it when attempting to build without CUDA
-  if(NOT USE_BACKEND STREQUAL "CUDA")
-    find_package (Threads REQUIRED)
-    target_link_libraries(katago Threads::Threads)
-  endif()
+  find_package (Threads REQUIRED)
+  target_link_libraries(katago Threads::Threads)
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2 -pedantic -Wall -Wextra -Wno-sign-compare -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Wmissing-declarations -Wmissing-include-dirs -Woverloaded-virtual -Wredundant-decls -Wshadow -Wstrict-overflow=1 -Wswitch-default -Wfloat-conversion -Wunused")
 
