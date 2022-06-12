@@ -390,7 +390,7 @@ int MainCmds::demoplay(const vector<string>& args) {
     return 1;
   }
 
-  Logger logger;
+  Logger logger(&cfg);
   logger.addFile(logFile);
 
   logger.write("Engine starting...");
@@ -643,8 +643,8 @@ int MainCmds::samplesgfs(const vector<string>& args) {
 
   MakeDir::make(outDir);
 
-  Logger logger;
-  logger.setLogToStdout(true);
+  const bool logToStdout = true;
+  Logger logger(nullptr, logToStdout);
   logger.addFile(outDir + "/" + "log.log");
   for(const string& arg: args)
     logger.write(string("Command: ") + arg);
@@ -990,8 +990,8 @@ int MainCmds::dataminesgfs(const vector<string>& args) {
 
   MakeDir::make(outDir);
 
-  Logger logger;
-  logger.setLogToStdout(true);
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
   logger.addFile(outDir + "/" + "log.log");
   for(const string& arg: args)
     logger.write(string("Command: ") + arg);
@@ -1811,8 +1811,8 @@ int MainCmds::trystartposes(const vector<string>& args) {
     return 1;
   }
 
-  Logger logger;
-  logger.setLogToStdout(true);
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
 
   SearchParams params = Setup::loadSingleParams(cfg,Setup::SETUP_FOR_ANALYSIS);
   //Ignore temperature, noise
@@ -1969,8 +1969,9 @@ int MainCmds::viewstartposes(const vector<string>& args) {
   }
 
   Rand rand;
-  Logger logger;
-  logger.setLogToStdout(true);
+
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
 
   Rules rules;
   AsyncBot* bot = NULL;
@@ -2116,8 +2117,9 @@ int MainCmds::sampleinitializations(const vector<string>& args) {
   }
 
   Rand rand;
-  Logger logger;
-  logger.setLogToStdout(true);
+
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
 
   NNEvaluator* nnEval = NULL;
   if(cfg.getFileName() != "") {

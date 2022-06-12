@@ -53,6 +53,8 @@ int MainCmds::runtests(const vector<string>& args) {
 
   ScoreValue::freeTables();
 
+  Tests::runConfigTests({});
+
   cout << "All tests passed" << endl;
   return 0;
 }
@@ -342,10 +344,6 @@ int MainCmds::runtinynntests(const vector<string>& args) {
   Board::initHash();
   ScoreValue::initTables();
 
-  Logger logger;
-  logger.setLogToStdout(true);
-  logger.setLogTime(false);
-
   ConfigParser cfg;
   {
     //Dummy parameters
@@ -371,6 +369,11 @@ int MainCmds::runtinynntests(const vector<string>& args) {
     cfg.initialize(in);
   }
 
+  const bool logToStdoutDefault = true;
+  const bool logToStderrDefault = false;
+  const bool logTime = false;
+  Logger logger(&cfg, logToStdoutDefault, logToStderrDefault, logTime);
+
   const bool randFileName = false;
   TinyModelTest::runTinyModelTest(
     args[1],
@@ -395,11 +398,13 @@ int MainCmds::runnnevalcanarytests(const vector<string>& args) {
   Board::initHash();
   ScoreValue::initTables();
 
-  Logger logger;
-  logger.setLogToStdout(true);
-  logger.setLogTime(false);
-
   ConfigParser cfg(cfgFile);
+
+  const bool logToStdoutDefault = true;
+  const bool logToStderrDefault = false;
+  const bool logTime = false;
+  Logger logger(&cfg, logToStdoutDefault, logToStderrDefault, logTime);
+
   Rand seedRand;
 
   NNEvaluator* nnEval;
@@ -448,8 +453,9 @@ int MainCmds::runbeginsearchspeedtest(const vector<string>& args) {
   }
 
   Rand rand;
-  Logger logger;
-  logger.setLogToStdout(true);
+
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
 
   NNEvaluator* nnEval = NULL;
   const bool loadKomiFromCfg = false;
@@ -571,8 +577,9 @@ int MainCmds::runownershipspeedtest(const vector<string>& args) {
   }
 
   Rand rand;
-  Logger logger;
-  logger.setLogToStdout(true);
+
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
 
   NNEvaluator* nnEval = NULL;
   const bool loadKomiFromCfg = false;
@@ -718,4 +725,9 @@ int MainCmds::runsleeptest(const vector<string>& args) {
   }
   return 0;
 
+}
+
+int MainCmds::runconfigtests(const vector<string>& args) {
+  Tests::runConfigTests(args);
+  return 0;
 }

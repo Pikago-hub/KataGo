@@ -2182,9 +2182,10 @@ void Tests::runSearchTestsV8(const string& modelFile, bool inputsNHWC, bool useN
   cout << "Running search tests introduced after v8 nets" << endl;
   NeuralNet::globalInitialize();
 
-  Logger logger;
-  logger.setLogToStdout(true);
-  logger.setLogTime(false);
+  const bool logToStdout = true;
+  const bool logToStderr = false;
+  const bool logTime = false;
+  Logger logger(nullptr, logToStdout, logToStderr, logTime);
 
   NNEvaluator* nnEval;
   NNEvaluator* nnEval9;
@@ -2242,7 +2243,8 @@ void Tests::runSearchTestsV8(const string& modelFile, bool inputsNHWC, bool useN
   nnEval = startNNEval(
     modelFile,logger,"v8seed",19,19,-1,inputsNHWC,useNHWC,useFP16,false,false);
   runV8SearchMultithreadTest(nnEval,logger);
-  logger.setLogToStdout(false);
+  // Suppress some nondeterministc messages about number of batches
+  logger.setDisabled(true);
   delete nnEval;
   nnEval = NULL;
 

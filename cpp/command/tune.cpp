@@ -138,8 +138,8 @@ int MainCmds::tuner(const vector<string>& args) {
 
   string homeDataDirOverride = Setup::loadHomeDataDirOverride(cfg);
 
-  Logger logger;
-  logger.setLogToStdout(true);
+  const bool logToStdoutDefault = true;
+  Logger logger(&cfg, logToStdoutDefault);
 
   logger.write("Loading model...");
   ModelDesc modelDesc;

@@ -103,12 +103,10 @@ int MainCmds::analysis(const vector<string>& args) {
   if(forDeterministicTesting)
     seedRand.init("forDeterministicTesting");
 
-  Logger logger;
-  Setup::initializeLoggerFromConfig(cfg, logger, seedRand);
-
-  const bool logToStderr = cfg.contains("logToStderr") ? cfg.getBool("logToStderr") : true;
-  if(logToStderr)
-    logger.setLogToStderr(true);
+  const bool logToStdoutDefault = false;
+  const bool logToStderrDefault = true;
+  Logger logger(&cfg, logToStdoutDefault, logToStderrDefault);
+  const bool logToStderr = logger.isLoggingToStderr();
 
   logger.write("Analysis Engine starting...");
   logger.write(Version::getKataGoVersionForHelp());

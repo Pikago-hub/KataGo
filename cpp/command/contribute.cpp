@@ -473,8 +473,12 @@ int MainCmds::contribute(const vector<string>& args) {
     }
   }
 
-  Logger logger;
-  logger.setLogToStdout(true);
+  const bool logToStdoutDefault = true;
+  const bool logToStderrDefault = false;
+  const bool logTime = true;
+  // Explicitly avoid logging config contents, this contains the user's password.
+  const bool logConfigContents = false;
+  Logger logger(userCfg, logToStdoutDefault, logToStderrDefault, logTime, logConfigContents);
 
   logger.write("Distributed Self Play Engine starting...");
 
